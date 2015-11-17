@@ -200,33 +200,48 @@ for sample in samples:
         processes.difference_update(
             p for p in processes_temp if p.poll() is not None)
 
-##############################################
-### define read group sets for each sample ###
-##############################################
+#######################
+### run preseq call ###
+#######################
 
-wkdir = out_base + '/preseq_curve_estimates/'
+wkdir = out_base + '/preseq_curve_estimates' 
 if (not os.path.isdir(wkdir)):
     os.mkdir(wkdir)
 for sample in samples:
     print sample
     sample = 'NexPond-' + sample 
     outdir = out_base + '/' + sample
-    i = 3 # use i number of read groups
     #RGbam  = outdir +'/' + sample+'_chrm21_rgSet' + str(i) + '.bam'
-    RGbam  = outdir +'/' + sample+'_chrm21_rgSet' + str(i) + '_dup_marked.bam'
-    # mark duplicates
-    outRGmetrics  = wkdir +'/' + sample+'_rgSet' + str(i) + '.c_curve'
-    outlog  = wkdir +'/' + sample+'_rgSet' + str(i) + '_c_curve.log'
+    ### run c_curve on whole file
+    i = 12 # use i number of read groups
     preseq_mode = 'c_curve'
-    #preseq_mode = 'lc_extrap'
+    RGbam  = outdir +'/' + sample+'_chrm21_rgSet' + str(i) + '_dup_marked.bam' # mark duplicates
+    outRGmetrics  = wkdir +'/' + sample+'_rgSet' + str(i) + '.' + preseq_mode
+    outlog  = wkdir +'/' + sample+'_rgSet' + str(i) + '_' + preseq_mode + '.log'
     cmd2 = ' '.join(['/humgen/gsa-hpprojects/dev/hogstrom/code/preseq/preseq',
-                         preseq_mode + ' -v',
+                         preseq_mode + ' -v', #-P
+                         '-B ' + RGbam,
+                         '-s 1e+04',
+                         '-o '+ outRGmetrics,
+                         '&> ' + outlog])
+    gout = os.popen(cmd2).read()
+    ### run lc_extrap on smaller set of read groups
+    i = 3 # use i number of read groups
+    preseq_mode = 'lc_extrap'
+    RGbam  = outdir +'/' + sample+'_chrm21_rgSet' + str(i) + '_dup_marked.bam' # mark duplicates
+    outRGmetrics  = wkdir +'/' + sample+'_rgSet' + str(i) + '.' + preseq_mode
+    outlog  = wkdir +'/' + sample+'_rgSet' + str(i) + '_' + preseq_mode + '.log'
+    cmd2 = ' '.join(['/humgen/gsa-hpprojects/dev/hogstrom/code/preseq/preseq',
+                         preseq_mode + ' -v', #-P
                          '-B ' + RGbam,
                          '-s 1e+04',
                          '-e 1e+06',
                          '-o '+ outRGmetrics,
                          '&> ' + outlog])
     gout = os.popen(cmd2).read()
+
+
+
 
 ### run preseq to estimate libary yield
 # /humgen/gsa-hpprojects/dev/hogstrom/code/preseq/preseq lc_extrap -B \
