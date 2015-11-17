@@ -3,6 +3,9 @@ import pandas as pd
 import os
 import subprocess
 import time
+#use .matplotlib-1.3.1-python-2.7.1-sqlite3-rtrees
+#use .scipy-1.3.1-python-2.7.1-sqlite3-rtrees
+
 
 sample_root = '/seq/picard_aggregation/D5227'
 out_base = '/humgen/gsa-hpprojects/dev/hogstrom/depth_by_read_group/Nexome'
@@ -196,3 +199,47 @@ for sample in samples:
         processes_temp = processes.copy()
         processes.difference_update(
             p for p in processes_temp if p.poll() is not None)
+
+##############################################
+### define read group sets for each sample ###
+##############################################
+
+wkdir = out_base + '/preseq_curve_estimates/'
+if (not os.path.isdir(wkdir)):
+    os.mkdir(wkdir)
+for sample in samples:
+    print sample
+    sample = 'NexPond-' + sample 
+    outdir = out_base + '/' + sample
+    i = 3 # use i number of read groups
+    #RGbam  = outdir +'/' + sample+'_chrm21_rgSet' + str(i) + '.bam'
+    RGbam  = outdir +'/' + sample+'_chrm21_rgSet' + str(i) + '_dup_marked.bam'
+    # mark duplicates
+    outRGmetrics  = wkdir +'/' + sample+'_rgSet' + str(i) + '.c_curve'
+    outlog  = wkdir +'/' + sample+'_rgSet' + str(i) + '_c_curve.log'
+    preseq_mode = 'c_curve'
+    #preseq_mode = 'lc_extrap'
+    cmd2 = ' '.join(['/humgen/gsa-hpprojects/dev/hogstrom/code/preseq/preseq',
+                         preseq_mode + ' -v',
+                         '-B ' + RGbam,
+                         '-s 1e+04',
+                         '-e 1e+06',
+                         '-o '+ outRGmetrics,
+                         '&> ' + outlog])
+    gout = os.popen(cmd2).read()
+
+### run preseq to estimate libary yield
+# /humgen/gsa-hpprojects/dev/hogstrom/code/preseq/preseq lc_extrap -B \
+# -s 1e+04 \
+# -e 1e+06 \
+# -o $outdir/NexPond-376014_chrm21_rg3_yield_estimates_withoutPairedEndFlag2.txt \
+# $outdir/NexPond-376014_chrm21_rg3_dupMarked.bam \
+# -v
+
+### preseq complexity curve
+# /humgen/gsa-hpprojects/dev/hogstrom/code/preseq/preseq c_curve -B \
+# -s 1e+04 \
+# -o $outdir/NexPond-376014_chrm21_rg2_complexity_curve.txt \
+#  $outdir/NexPond-376014_chrm21_rg2_dupMarked.bam \
+# -p \
+# -v
