@@ -3,6 +3,9 @@ import pandas as pd
 import os
 import subprocess
 import time
+#use .matplotlib-1.3.1-python-2.7.1-sqlite3-rtrees
+#use .scipy-1.3.1-python-2.7.1-sqlite3-rtrees
+
 
 sample_root = '/seq/picard_aggregation/D5227'
 out_base = '/humgen/gsa-hpprojects/dev/hogstrom/depth_by_read_group/Nexome'
@@ -196,3 +199,62 @@ for sample in samples:
         processes_temp = processes.copy()
         processes.difference_update(
             p for p in processes_temp if p.poll() is not None)
+
+#######################
+### run preseq call ###
+#######################
+
+wkdir = out_base + '/preseq_curve_estimates' 
+if (not os.path.isdir(wkdir)):
+    os.mkdir(wkdir)
+for sample in samples:
+    print sample
+    sample = 'NexPond-' + sample 
+    outdir = out_base + '/' + sample
+    #RGbam  = outdir +'/' + sample+'_chrm21_rgSet' + str(i) + '.bam'
+    ### run c_curve on whole file
+    i = 12 # use i number of read groups
+    preseq_mode = 'c_curve'
+    RGbam  = outdir +'/' + sample+'_chrm21_rgSet' + str(i) + '_dup_marked.bam' # mark duplicates
+    outRGmetrics  = wkdir +'/' + sample+'_rgSet' + str(i) + '.' + preseq_mode
+    outlog  = wkdir +'/' + sample+'_rgSet' + str(i) + '_' + preseq_mode + '.log'
+    cmd2 = ' '.join(['/humgen/gsa-hpprojects/dev/hogstrom/code/preseq/preseq',
+                         preseq_mode + ' -v', #-P
+                         '-B ' + RGbam,
+                         '-s 1e+04',
+                         '-o '+ outRGmetrics,
+                         '&> ' + outlog])
+    gout = os.popen(cmd2).read()
+    ### run lc_extrap on smaller set of read groups
+    i = 3 # use i number of read groups
+    preseq_mode = 'lc_extrap'
+    RGbam  = outdir +'/' + sample+'_chrm21_rgSet' + str(i) + '_dup_marked.bam' # mark duplicates
+    outRGmetrics  = wkdir +'/' + sample+'_rgSet' + str(i) + '.' + preseq_mode
+    outlog  = wkdir +'/' + sample+'_rgSet' + str(i) + '_' + preseq_mode + '.log'
+    cmd2 = ' '.join(['/humgen/gsa-hpprojects/dev/hogstrom/code/preseq/preseq',
+                         preseq_mode + ' -v', #-P
+                         '-B ' + RGbam,
+                         '-s 1e+04',
+                         '-e 1e+06',
+                         '-o '+ outRGmetrics,
+                         '&> ' + outlog])
+    gout = os.popen(cmd2).read()
+
+
+
+
+### run preseq to estimate libary yield
+# /humgen/gsa-hpprojects/dev/hogstrom/code/preseq/preseq lc_extrap -B \
+# -s 1e+04 \
+# -e 1e+06 \
+# -o $outdir/NexPond-376014_chrm21_rg3_yield_estimates_withoutPairedEndFlag2.txt \
+# $outdir/NexPond-376014_chrm21_rg3_dupMarked.bam \
+# -v
+
+### preseq complexity curve
+# /humgen/gsa-hpprojects/dev/hogstrom/code/preseq/preseq c_curve -B \
+# -s 1e+04 \
+# -o $outdir/NexPond-376014_chrm21_rg2_complexity_curve.txt \
+#  $outdir/NexPond-376014_chrm21_rg2_dupMarked.bam \
+# -p \
+# -v
