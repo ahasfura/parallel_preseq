@@ -2,6 +2,17 @@
 
 Run on Ubuntu 14.10. Install pre-requisites (like GSL), compile samtools and preseq from source. 
 
+### Julia implementation of preseq
+
+```
+usage: preseq.jl [--bam BAM] [--output OUTPUT] [-h]
+
+optional arguments:
+  --bam BAM        Input BAM file
+  --output OUTPUT  Output complexity file
+  -h, --help       show this help message and exit
+```
+
 ### Possibility of speedup from pre-calculating read counts
 
 Using test_chrm21_rg2.bam, a BAM file containing entries from chromosome 21, the complexity curve can be calculated using the preseq tool (along with execution time) by running:
@@ -42,3 +53,5 @@ time ./preseq c_curve -o complexity_from_fastq_counts.txt -V counts_fastq.txt -s
 so we need to look into what is going on here. In the end, this is probably not the way to go for calculating read counts, since conversion from .bam to .fastq may end up being quite expensive.
 
 A better option is to re-implement the load_counts_BAM_se (and it's helper update_se_duplicate_counts_hist) from load_data_for_complexity.cpp in Julia, and parallelizing them to introduce speedup. Since these methods use helper methods from Smith lab C++ codes like GenomicRegion.cpp and MappedRead.cpp in order to parse BAM file entries, we need to figure out how to call C++ code from Julia. There is discussion on this here: docs.julialang.org/en/release-0.4/manual/calling-c-and-fortran-code
+
+
