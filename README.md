@@ -11,3 +11,6 @@ preseq counts of unique molecules observed in Nexome samples:
 ![](figures/Nexome_read_counts_8_reads_max.png)
 
 ![](figures/Nexome_read_counts.png)
+
+errors in preseq yield estimates:
+![](figures/preseq_yield_estimate_errors.png)
