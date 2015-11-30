@@ -204,7 +204,17 @@ for sample in samples:
 ### run preseq call ###
 #######################
 
+def get_rgs(fpath):
+    cmd = ' '.join(['samtools view -H',
+                     '\"' + fpath + '\"',
+                     '| grep \'^@RG\''])
+    gout = os.popen(cmd).read()
+    rgLines = gout.split('@RG')
+    rgLines.pop(0)
+    return [rg[4:11] for rg in rgLines]
+
 processes = set()
+max_processes = 15
 wkdir = out_base + '/preseq_curve_estimates' 
 if (not os.path.isdir(wkdir)):
     os.mkdir(wkdir)
@@ -214,11 +224,12 @@ for sample in samples:
     outdir = out_base + '/' + sample
     #RGbam  = outdir +'/' + sample+'_chrm21_rgSet' + str(i) + '.bam'
     ### run c_curve on whole file
-    i = 16 # use i number of read groups
     preseq_mode = 'c_curve'
-    RGbam  = outdir +'/' + sample+'_chrm21_rgSet' + str(i) + '_dup_marked.bam' # mark duplicates
-    outRGmetrics  = wkdir +'/' + sample+'_rgSet' + str(i) + '.' + preseq_mode
-    outlog  = wkdir +'/' + sample+'_rgSet' + str(i) + '_' + preseq_mode + '.log'
+    RGfull  = outdir +'/' + sample+'_chrm21.bam' # 
+    i = len(get_rgs(RGfull))
+    RGbam  = outdir +'/' + sample+'_chrm21_rgSet' + str(i) + '_dup_marked.bam' # largest read group set
+    outRGmetrics  = wkdir +'/' + sample+'_chrm21' + '.' + preseq_mode
+    outlog  = wkdir +'/' + sample+'_chrm21' + '_' + preseq_mode + '.log'
     cmd2 = ' '.join(['/humgen/gsa-hpprojects/dev/hogstrom/code/preseq/preseq',
                          preseq_mode + ' -v', #-P
                          '-B ' + RGbam,

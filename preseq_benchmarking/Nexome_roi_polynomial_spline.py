@@ -205,43 +205,6 @@ plt.savefig(outF, bbox_inches='tight')
 plt.close()
 
 
-#######################s
-### run preseq call ###
-#######################
-
-wkdir = out_base + '/preseq_curve_estimates' 
-if (not os.path.isdir(wkdir)):
-    os.mkdir(wkdir)
-for sample in samples:
-    print sample
-    sample = 'NexPond-' + sample 
-    outdir = out_base + '/' + sample
-    ccurve  = wkdir +'/' + sample+'_rgSet' + str(16) + '.c_curve'
-    # iextrap = 
-    lcextrap = wkdir +'/' + sample+'_rgSet' + str(3) + '.lc_extrap'
-    # outlog  = wkdir +'/' + sample+'_rgSet' + str(i) + '_c_curve.log'
-    ye = pd.read_csv(lcextrap,sep='\t',index_col=0) #load in yield estimates
-    cc = pd.read_csv(ccurve,sep='\t',index_col=0) #load in yield estimates
-    ### load picard dup counts
-    fin2 = outdir + '/' + sample + '_chrm21_read_grp_dup_metrics.txt'
-    dm = pd.read_csv(fin2,index_col=0) #load in yield estimates
-    #dm.PERCENT_DUPLICATION.convert_objects('convert_numeric')
-    dm['UNIQUE_READS'] = dm.READ_PAIRS_EXAMINED - dm.READ_PAIR_DUPLICATES
-    ### make plot
-    ye.plot(ye.index)
-    plt.plot(cc.index.values,cc.distinct_reads.values,'or',label='preseq observed')
-    plt.plot(dm.READ_PAIRS_EXAMINED.values,dm.UNIQUE_READS.values,'og',label='picard observed')
-    plt.legend(loc='lower right',numpoints=1)
-    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-    plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
-    plt.title('preseq yield estimate: based on 2 read \n groups for Nexome sample 376014')
-    plt.ylabel('expected distinct')
-    plt.xlabel('reads observed')
-    outF = wkdir  +'/' + sample+'_rgSet' + str(i) + '_c_curve.png'
-    plt.savefig(outF, bbox_inches='tight')
-    plt.close()
-
-
 
 ###single graph for talk
 # outdir = out_base + '/' + sample
