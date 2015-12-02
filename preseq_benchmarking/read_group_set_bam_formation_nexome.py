@@ -214,7 +214,7 @@ def get_rgs(fpath):
     return [rg[4:11] for rg in rgLines]
 
 processes = set()
-max_processes = 15
+max_processes = 13
 wkdir = out_base + '/preseq_curve_estimates' 
 if (not os.path.isdir(wkdir)):
     os.mkdir(wkdir)

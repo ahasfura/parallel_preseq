@@ -1,7 +1,6 @@
 import pandas as pd 
 import numpy as np 
 import matplotlib.pyplot as plt
-from scipy import interpolate
 import os 
 #use .matplotlib-1.3.1-python-2.7.1-sqlite3-rtrees
 #use .scipy-0.13.0-python-2.7.1-sqlite3-rtrees
@@ -68,6 +67,7 @@ samples=['359781',
 wkdir = out_base + '/preseq_curve_estimates' 
 if (not os.path.isdir(wkdir)):
     os.mkdir(wkdir)
+dfError = pd.DataFrame(columns=['error','percent_error'])    
 for sample in samples:
     print sample
     sample = 'NexPond-' + sample 
@@ -84,6 +84,9 @@ for sample in samples:
     dm = pd.read_csv(fin2,index_col=0) #load in yield estimates
     #dm.PERCENT_DUPLICATION.convert_objects('convert_numeric')
     dm['UNIQUE_READS'] = dm.READ_PAIRS_EXAMINED - dm.READ_PAIR_DUPLICATES
+    ### calculate error 
+    dfError.ix[sample,'error'] = np.abs(ye.ix[cc.index[-1],'EXPECTED_DISTINCT'] - cc.ix[cc.index[-1],"distinct_reads"])
+    dfError.ix[sample,'percent_error'] = dfError.ix[sample,'error']/ cc.ix[cc.index[-1],"distinct_reads"]
     ### make plot
     ye.plot(ye.index)
     plt.plot(cc.index.values,cc.distinct_reads.values,'or',label='preseq observed')
@@ -98,6 +101,16 @@ for sample in samples:
     plt.savefig(outF, bbox_inches='tight')
     plt.close()
 
+### plot preseq percent error
+plt.boxplot(dfError['percent_error'].values)
+plt.title('preseq yield estimate error for Nexome samples')
+plt.ylabel('percent error')
+plt.xlabel('reads observed')
+outF = wkdir  +'/preseq_yield_estimate_errors.png'
+plt.savefig(outF, bbox_inches='tight')
+plt.close()
+
+
 ### plot of read counts
 for sample in samples:
     print sample
@@ -106,12 +119,15 @@ for sample in samples:
     # ccurve  = wkdir +'/' + sample+'_rgSet' + str(16) + '.c_curve'
     outlog  = wkdir +'/' + sample+'_chrm21' + '_c_curve.log'    
     df = pd.read_csv(outlog,sep='\t',index_col=0,skiprows=8,names=['read occurences','count']) #load in yield estimates
-    isStr = [not ("sample size" in x) for x in df.index.values]
-    df = df.ix[isStr]
-    df_normed = df['count']/df['count'].sum()
-    iInts = [int(x) for x in df_normed.index]
-    plt.plot(iInts,df_normed)
-#plt.xlim((0, 10))
+    if df.index[0] != '1': # skip if error in loading BAM file
+        print sample + ' error reading BAM'
+    else:
+        isStr = [not ("sample size" in x) for x in df.index.values]
+        df = df.ix[isStr]
+        df_normed = df['count']/df['count'].sum()
+        iInts = [int(x) for x in df_normed.index]
+        plt.plot(iInts,df_normed)
+plt.xlim((0, 6))
 plt.title('occurences of unique reads in Nexome samples')
 plt.ylabel('normed count')
 plt.xlabel('read occurences')
