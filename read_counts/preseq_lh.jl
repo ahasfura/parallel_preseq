@@ -8,7 +8,8 @@
 using ArgParse
 
 # Path to preseq executable
-preseq_bin  = "preseq/preseq"
+# preseq_bin  = "./preseq/preseq"
+preseq_bin  = "/humgen/gsa-hpprojects/dev/hogstrom/code/preseq/preseq"
 # Arguments to preseq (perhaps these should eventually be args to preseq.jl)
 preseq_func = "c_curve"
 preseq_s    = 10000
@@ -49,17 +50,20 @@ is_pairend(flag)                            = (flag & 0x1 != 0)
 is_Trich(flag)                              = (is_pairend(flag) ? (flag & 0x40 != 0) : true)
 is_mapping_paired(flag, mate_name, chrom)   = (((flag & 0x2 != 0) && ~((mate_name == "=") || (mate_name == chrom))) ? false : (flag & 0x2 != 0))
 
-# Process command line arguments
-bam_filename, bai_filename, output_filename = "", "", ""
-parsed_args = parse_arguments()
-for pa in parsed_args
-    if pa[1] == "bam"
-        bam_filename = pa[2]
-        bai_filename = string(pa[2], ".bai")
-    elseif pa[1] == "output"
-        output_filename = pa[2]
-    end
-end
+### Process command line arguments
+# bam_filename, bai_filename, output_filename = "", "", ""
+# parsed_args = parse_arguments()
+# for pa in parsed_args
+#     if pa[1] == "bam"
+#         bam_filename = pa[2]
+#         bai_filename = string(pa[2], ".bai")
+#     elseif pa[1] == "output"
+#         output_filename = pa[2]
+#     end
+# end
+
+bam_filename = "/humgen/gsa-hpprojects/dev/hogstrom/depth_by_read_group/Nexome/NexPond-359781/NexPond-359781_chrm21_rgSet3_dup_marked.bam"
+output_filename = "/humgen/gsa-hpprojects/dev/hogstrom/depth_by_read_group/Nexome/parallel_preseq_27Nov/test.out"
 
 # Check if given BAM file and a corresponding index (BAI) file exist
 if ~isfile(bam_filename)
@@ -70,16 +74,16 @@ if ~isfile(bai_filename)
     error("BAI file does not exist. Make sure an index exists for the BAM file, or generate one by using: samtools index <filename.bam>")
 end
 
-# Determine number of entries in BAM file (using its index file)
-idxstats = split(readall(`samtools idxstats $bam_filename`), '\n')
-num_mapped, num_unmapped = 0, 0
-for entry in idxstats
-    fields          = split(entry)
-    if size(fields, 1) > 0
-        num_mapped      += parse(Int, fields[3])
-        num_unmapped    += parse(Int, fields[4])
-    end
-end
+### Determine number of entries in BAM file (using its index file)
+# idxstats = split(readall(`samtools idxstats $bam_filename`), '\n')
+# num_mapped, num_unmapped = 0, 0
+# for entry in idxstats
+#     fields          = split(entry)
+#     if size(fields, 1) > 0
+#         num_mapped      += parse(Int, fields[3])
+#         num_unmapped    += parse(Int, fields[4])
+#     end
+# end
 
 # Read BAM file using samtools
 starts = []
@@ -108,8 +112,8 @@ count_filename = string(bam_filename, ".counts")
 writedlm(count_filename, unique_occurences(starts)[1:end-1, 2])
 
 # Use preseq to compute complexity from read counts
-run(`./$preseq_bin $preseq_func -o $output_filename -V $count_filename -s $preseq_s`)
+run(`$preseq_bin $preseq_func -o $output_filename -V $count_filename -s $preseq_s`)
 
 # Remove read counts file
-rm(count_filename)
+#rm(count_filename)
 

@@ -1,7 +1,11 @@
 import pandas as pd 
 import numpy as np 
 import matplotlib.pyplot as plt
+import os 
+import subprocess
 #use .matplotlib-1.3.1-python-2.7.1-sqlite3-rtrees
+#use Samtools
+#use .julia-0.4.0
 
 sample_root = '/seq/picard_aggregation/D5227'
 out_base = '/humgen/gsa-hpprojects/dev/hogstrom/depth_by_read_group/Nexome'
@@ -60,7 +64,7 @@ samples=['359781',
 
 ### run Julia 
 processes = set()
-max_processes = 15
+max_processes = 13
 for sample in samples:
     print sample
     sample = 'NexPond-' + sample 
@@ -72,7 +76,7 @@ for sample in samples:
     fPrefix = bamName.split('.')[0]
     outMetric = wkdir +'/' + fPrefix +'.jl_read_counts'
     if not os.path.exists(outMetric):
-        cmd2 = ' '.join(['julia' + jl_path,
+        cmd2 = ' '.join(['julia ' + jl_path,
                              '--bam '+inRGbam,
                              '--output '+outMetric])
         processes.add(subprocess.Popen(cmd2,shell=True))
