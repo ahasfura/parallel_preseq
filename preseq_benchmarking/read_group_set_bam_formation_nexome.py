@@ -6,11 +6,11 @@ import time
 #use .matplotlib-1.3.1-python-2.7.1-sqlite3-rtrees
 #use .scipy-1.3.1-python-2.7.1-sqlite3-rtrees
 
-
 sample_root = '/seq/picard_aggregation/D5227'
 out_base = '/humgen/gsa-hpprojects/dev/hogstrom/depth_by_read_group/Nexome'
 chrm_bed_file = '/humgen/gsa-hpprojects/dev/hogstrom/depth_by_read_group/chrm21_full.bed'
 picard_path = '/seq/software/picard/current/bin/picard.jar'
+jl_path = '/humgen/gsa-hpprojects/dev/hogstrom/code/parallel_preseq/read_counts/preseq_lh.jl'
 
 processes = set()
 max_processes = 27
@@ -215,7 +215,8 @@ def get_rgs(fpath):
 
 processes = set()
 max_processes = 13
-wkdir = out_base + '/preseq_curve_estimates' 
+# wkdir = out_base + '/preseq_curve_estimates' 
+wkdir = out_base + '/parallel_preseq_27Nov'
 if (not os.path.isdir(wkdir)):
     os.mkdir(wkdir)
 for sample in samples:
@@ -227,22 +228,36 @@ for sample in samples:
     preseq_mode = 'c_curve'
     RGfull  = outdir +'/' + sample+'_chrm21.bam' # 
     i = len(get_rgs(RGfull))
-    RGbam  = outdir +'/' + sample+'_chrm21_rgSet' + str(i) + '_dup_marked.bam' # largest read group set
-    outRGmetrics  = wkdir +'/' + sample+'_chrm21' + '.' + preseq_mode
-    outlog  = wkdir +'/' + sample+'_chrm21' + '_' + preseq_mode + '.log'
-    cmd2 = ' '.join(['/humgen/gsa-hpprojects/dev/hogstrom/code/preseq/preseq',
-                         preseq_mode + ' -v', #-P
-                         '-B ' + RGbam,
-                         '-s 1e+04',
-                         '-o '+ outRGmetrics,
-                         '&> ' + outlog])
-    # gout = os.popen(cmd2).read()
-    processes.add(subprocess.Popen(cmd2,shell=True))
-    if len(processes) >= max_processes:
-        os.wait()
-        processes_temp = processes.copy()
-        processes.difference_update(
-            p for p in processes_temp if p.poll() is not None)
+    bamName = sample+'_chrm21_rgSet' + str(i) + '_dup_marked.bam' # largest read group set
+    RGbam  = outdir +'/' + bamName
+    # outRGmetrics  = wkdir +'/' + sample+'_chrm21' + '.' + preseq_mode
+    # outlog  = wkdir +'/' + sample+'_chrm21' + '_' + preseq_mode + '.log'
+    # cmd2 = ' '.join(['/humgen/gsa-hpprojects/dev/hogstrom/code/preseq/preseq',
+    #                      preseq_mode + ' -v', #-P
+    #                      '-B ' + RGbam,
+    #                      '-s 1e+04',
+    #                      '-o '+ outRGmetrics,
+    #                      '&> ' + outlog])
+    # # gout = os.popen(cmd2).read()
+    # processes.add(subprocess.Popen(cmd2,shell=True))
+    # if len(processes) >= max_processes:
+    #     os.wait()
+    #     processes_temp = processes.copy()
+    #     processes.difference_update(
+    #         p for p in processes_temp if p.poll() is not None)
+    ### run preseq_jl
+    fPrefix = bamName.split('.')[0]
+    outMetric = wkdir +'/' + fPrefix +'.jl_read_counts'
+    if not os.path.exists(outMetric):
+        cmd2 = ' '.join(['julia ' + jl_path,
+                             '--bam '+RGbam,
+                             '--output '+outMetric])
+        processes.add(subprocess.Popen(cmd2,shell=True))
+        if len(processes) >= max_processes:
+            os.wait()
+            processes_temp = processes.copy()
+            processes.difference_update(
+                p for p in processes_temp if p.poll() is not None)
     ### run lc_extrap on smaller set of read groups
     i = 3 # use i number of read groups
     preseq_mode = 'lc_extrap'

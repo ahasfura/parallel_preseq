@@ -10,7 +10,7 @@ import subprocess
 sample_root = '/seq/picard_aggregation/D5227'
 out_base = '/humgen/gsa-hpprojects/dev/hogstrom/depth_by_read_group/Nexome'
 # picard_path='/home/unix/hogstrom/picard_dup_by_insert.jar' #modified jar
-jl_path = '/humgen/gsa-hpprojects/dev/hogstrom/code/parallel_preseq/read_counts/preseq.jl'
+jl_path = '/humgen/gsa-hpprojects/dev/hogstrom/code/parallel_preseq/read_counts/preseq_lh.jl'
 
 # Nexome samples
 samples=['359781',

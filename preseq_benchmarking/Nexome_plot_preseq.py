@@ -134,3 +134,49 @@ plt.xlabel('read occurences')
 outF = wkdir  +'/Nexome_read_counts.png'
 plt.savefig(outF, bbox_inches='tight')
 plt.close()
+
+### Plot differences in preseq and preseq.jl
+Pwkdir = out_base + '/preseq_curve_estimates' 
+Jwkdir = out_base + '/parallel_preseq_27Nov'
+def get_rgs(fpath):
+    cmd = ' '.join(['samtools view -H',
+                     '\"' + fpath + '\"',
+                     '| grep \'^@RG\''])
+    gout = os.popen(cmd).read()
+    rgLines = gout.split('@RG')
+    rgLines.pop(0)
+    return [rg[4:11] for rg in rgLines]
+
+for sample in samples:
+    print sample
+    sample = 'NexPond-' + sample 
+    outdir = out_base + '/' + sample
+    # ccurve  = wkdir +'/' + sample+'_rgSet' + str(16) + '.c_curve'
+    #outlog  = wkdir +'/' + sample+'_chrm21' + '_c_curve.log'    
+    Pmetrics  = Pwkdir +'/' + sample+'_chrm21.c_curve'
+    RGfull  = outdir +'/' + sample+'_chrm21.bam' # 
+    i = len(get_rgs(RGfull))
+    bamName = sample+'_chrm21_rgSet' + str(i) + '_dup_marked.bam' # largest read group set
+    fPrefix = bamName.split('.')[0]
+    Jmetrics = Jwkdir +'/' + fPrefix +'.jl_read_counts'
+    #load text files
+    if not (os.path.exists(Jmetrics) & os.path.exists(Jmetrics)): 
+        print "missing file for " + sample
+    else:
+        pc = pd.read_csv(Pmetrics,sep='\t',index_col=0) #load in yield estimates
+        jc = pd.read_csv(Jmetrics,sep='\t',index_col=0) #load in yield estimates
+        if not (pc.shape == jc.shape):
+            print "shape mismatch"
+        else:
+            jp_diff = jc.distinct_reads - pc.distinct_reads
+            jp_per_diff = jp_diff/pc.distinct_reads
+            jp_per_diff[0] = 0
+            plt.plot(jp_per_diff.index.values,jp_per_diff.values)
+plt.title('percent difference in preseq vs preseq.jl read counts')
+plt.ylabel('percent differnce')
+plt.xlabel('read occurences')
+outF = Jwkdir  +'/preseq_vs_preseqJl_percent_diff.png'
+plt.savefig(outF, bbox_inches='tight')
+plt.close()
+
+
