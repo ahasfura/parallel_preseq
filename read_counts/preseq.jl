@@ -42,6 +42,26 @@ function unique_occurences(values)
     return counts
 end
 
+#function merge_counts(count_arrays)
+#    # For a given count_arrays[i], count_arrays[i + 1]
+#    # If last item in count_arrays[i] is identical to first item in count_arrays[i + 1]
+#    # then sum up the two counts, update count_arrays[i + 1]'s count, and delete last row
+#    # of count_arrays[i]
+#    for count_array in count_arrays
+#        println(count_array)
+#    end
+#end
+#
+#test_data = [1 1 2 2 2 2 2 3 3 4 5 6 7 7 8 8 8 8 9 9 9 10 11 11 11 12 13 14 14]
+#
+#c = Any[]
+#push!(c, unique_occurences(test_data[1:10]))
+#push!(c, unique_occurences(test_data[11:20]))
+#push!(c, unique_occurences(test_data[21:end]))
+#merge_counts(c)
+#println(unique_occurences(test_data))
+#exit()
+
 # Combination of bitwise flags are used for determining properties of a read
 is_primary(flag)                            = ~(flag & 0x100 != 0)
 is_mapped(flag)                             = ~(flag & 0x4 != 0)
@@ -69,6 +89,8 @@ end
 if ~isfile(bai_filename)
     error("BAI file does not exist. Make sure an index exists for the BAM file, or generate one by using: samtools index <filename.bam>")
 end
+
+tic()
 
 # Determine number of entries in BAM file (using its index file)
 idxstats = split(readall(`samtools idxstats $bam_filename`), '\n')
@@ -102,6 +124,8 @@ for line in lines
         end
     end
 end
+
+toc()
 
 # Write read counts to temporary file
 count_filename = string(bam_filename, ".counts")
