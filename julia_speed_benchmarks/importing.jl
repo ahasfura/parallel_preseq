@@ -57,6 +57,7 @@ tic()
 using DataFrames
 push!(times, toc())
 
+#=
 fig = figure("importing_hist", figsize=(10, 10))
 ax = axes()
 
@@ -68,3 +69,4 @@ xlabel("time")
 title("Importing Times")
 
 savefig("hist_of_import_times.svg")
+=#
