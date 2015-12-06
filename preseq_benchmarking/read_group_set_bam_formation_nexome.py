@@ -88,6 +88,9 @@ for sample in samples:
         processes.difference_update(
             p for p in processes if p.poll() is not None)
 
+
+#samtools view -h "/seq/picard_aggregation/D5227/NexPond-359781/current/NexPond-359781.bam" -L /humgen/gsa-hpprojects/dev/hogstrom/depth_by_read_group/chrm18_to_21_full.bed -o /humgen/gsa-hpprojects/dev/hogstrom/depth_by_read_group/Nexome/NexPond-359781/NexPond-359781_chrm18_to_21.bam
+
 ##############################################
 ### define read group sets for each sample ###
 ##############################################
