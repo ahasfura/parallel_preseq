@@ -5,6 +5,8 @@
     preseq toolbox
 =#
 
+println("IMPORTS AND PARSE ARGS...")
+tic()
 using ArgParse
 using DistributedArrays
 
@@ -44,6 +46,7 @@ end
 if ~isfile(bam_filename)
     error("BAM file does not exist. Check file path and try again")
 end
+toc()
 
 # Combination of bitwise flags are used for determining properties of a read
 @everywhere is_primary(flag)                            = ~(flag & 0x100 != 0)
