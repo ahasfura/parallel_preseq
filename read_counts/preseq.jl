@@ -86,26 +86,33 @@ if ~isfile(bam_filename)
     error("BAM file does not exist. Check file path and try again")
 end
 
-if ~isfile(bai_filename)
-    error("BAI file does not exist. Make sure an index exists for the BAM file, or generate one by using: samtools index <filename.bam>")
-end
+#if ~isfile(bai_filename)
+#    error("BAI file does not exist. Make sure an index exists for the BAM file, or generate one by using: samtools index <filename.bam>")
+#end
+
+println("CALCULATING READ COUNTS...")
 
 tic()
 
 # Determine number of entries in BAM file (using its index file)
-idxstats = split(readall(`samtools idxstats $bam_filename`), '\n')
-num_mapped, num_unmapped = 0, 0
-for entry in idxstats
-    fields          = split(entry)
-    if size(fields, 1) > 0
-        num_mapped      += parse(Int, fields[3])
-        num_unmapped    += parse(Int, fields[4])
-    end
-end
+#idxstats = split(readall(`samtools idxstats $bam_filename`), '\n')
+#num_mapped, num_unmapped = 0, 0
+#for entry in idxstats
+#    fields          = split(entry)
+#    if size(fields, 1) > 0
+#        num_mapped      += parse(Int, fields[3])
+#        num_unmapped    += parse(Int, fields[4])
+#    end
+#end
 
+println("Reading BAM file...")
+tic()
 # Read BAM file using samtools
 starts = []
 lines = split(readall(`samtools view $bam_filename`), '\n')
+toc()
+println("Analyzing entries...")
+tic()
 for line in lines
     # Read relevant fields from SAM file entry 
     fields      = split(line)
@@ -124,12 +131,20 @@ for line in lines
         end
     end
 end
-
 toc()
+
+tic()
+println("Calculating counts...")
+read_count_data = unique_occurences(starts)[1:end-1, 2]
+toc()
+
+println("WRITING READ COUNTS TO DISK...")
 
 # Write read counts to temporary file
 count_filename = string(bam_filename, ".counts")
-writedlm(count_filename, unique_occurences(starts)[1:end-1, 2])
+writedlm(count_filename, read_count_data)
+
+println("Running preseq with these pre-calculated read counts...")
 
 # Use preseq to compute complexity from read counts
 run(`./$preseq_bin $preseq_func -o $output_filename -V $count_filename -s $preseq_s`)
