@@ -1,0 +1,34 @@
+Listed here are the findings of issues julia has that effected our speedup.
+
+Importing:
+DistributedArrays - 1.18
+Interact - 0.53
+Colors - 0.484
+Clustering - 1.141
+Distributions - .451
+IJulia - .142
+JSON - .0003
+SortingAlgos - .010
+DataFrames - .403
+
+I/O:
+8s to write 1.3G
+
+Calling c from julia:
+
+calling julia from c:
+
+running bash commands from julia:
+
+starting julia up no processors specified: 
+1.015s
+
+starting julia up with different numbers of processors:
+1-3.284
+2-4.217
+3-5.127
+4-5.726
+5-6.453
+6-7.738
+7-8.757
+8-9.183
