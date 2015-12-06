@@ -124,7 +124,7 @@ tic()
 count_arrays = Any[]
 for i in 1:nworkers()
     push!(count_arrays, fetch(r[i]))
-    @printf("%d\t%s\n", r[i].where, size(fetch(r[i])))
+    #@printf("%d\t%s\n", r[i].where, size(fetch(r[i])))
 end
 toc()
 
