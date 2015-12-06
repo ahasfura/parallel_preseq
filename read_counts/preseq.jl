@@ -6,6 +6,7 @@
 =#
 
 using ArgParse
+using DistributedArrays
 
 # Path to preseq executable
 preseq_bin  = "preseq/preseq"
@@ -28,7 +29,7 @@ function parse_arguments()
 end
 
 # Essentially a Julia implementation of `uniq -c`
-function unique_occurences(values)
+@everywhere function unique_occurences(values)
     counts = []
     for value in values
         if size(counts, 1) == 0
@@ -63,11 +64,11 @@ end
 #exit()
 
 # Combination of bitwise flags are used for determining properties of a read
-is_primary(flag)                            = ~(flag & 0x100 != 0)
-is_mapped(flag)                             = ~(flag & 0x4 != 0)
-is_pairend(flag)                            = (flag & 0x1 != 0)
-is_Trich(flag)                              = (is_pairend(flag) ? (flag & 0x40 != 0) : true)
-is_mapping_paired(flag, mate_name, chrom)   = (((flag & 0x2 != 0) && ~((mate_name == "=") || (mate_name == chrom))) ? false : (flag & 0x2 != 0))
+@everywhere is_primary(flag)                            = ~(flag & 0x100 != 0)
+@everywhere is_mapped(flag)                             = ~(flag & 0x4 != 0)
+@everywhere is_pairend(flag)                            = (flag & 0x1 != 0)
+@everywhere is_Trich(flag)                              = (is_pairend(flag) ? (flag & 0x40 != 0) : true)
+@everywhere is_mapping_paired(flag, mate_name, chrom)   = (((flag & 0x2 != 0) && ~((mate_name == "=") || (mate_name == chrom))) ? false : (flag & 0x2 != 0))
 
 # Process command line arguments
 bam_filename, bai_filename, output_filename = "", "", ""
@@ -86,55 +87,67 @@ if ~isfile(bam_filename)
     error("BAM file does not exist. Check file path and try again")
 end
 
-#if ~isfile(bai_filename)
-#    error("BAI file does not exist. Make sure an index exists for the BAM file, or generate one by using: samtools index <filename.bam>")
-#end
+@everywhere function filter_reads(lines)
+    starts = []
+    for line in lines
+	# Read relevant fields from SAM file entry 
+	fields      = split(line)
+	if size(fields, 1) > 0
+	    flag        = parse(Int, fields[2])
+	    chrom       = fields[3]
+	    pos         = parse(Int, fields[4])
+	    mate_name   = fields[7]
+
+	    # Filter out secondary and unmapped reads
+	    if (is_primary(flag) && is_mapped(flag))
+		# Additional filters
+		if (~(is_mapping_paired(flag, mate_name, chrom)) || (is_mapping_paired(flag, mate_name, chrom) && is_Trich(flag)))
+		    push!(starts, pos + 1)  
+		end
+	    end
+	end
+    end
+
+    counts = []
+    for value in starts
+        if size(counts, 1) == 0
+            counts = [value 1]
+        elseif counts[end, 1] != value
+            counts = vcat(counts, [value 1])
+        else
+            counts[end, 2] += 1
+        end
+    end
+    return counts
+end
 
 println("CALCULATING READ COUNTS...")
-
-tic()
-
-# Determine number of entries in BAM file (using its index file)
-#idxstats = split(readall(`samtools idxstats $bam_filename`), '\n')
-#num_mapped, num_unmapped = 0, 0
-#for entry in idxstats
-#    fields          = split(entry)
-#    if size(fields, 1) > 0
-#        num_mapped      += parse(Int, fields[3])
-#        num_unmapped    += parse(Int, fields[4])
-#    end
-#end
 
 println("Reading BAM file...")
 tic()
 # Read BAM file using samtools
-starts = []
-lines = split(readall(`samtools view $bam_filename`), '\n')
+lines = distribute(split(readall(`samtools view $bam_filename`), '\n'))
 toc()
-println("Analyzing entries...")
-tic()
-for line in lines
-    # Read relevant fields from SAM file entry 
-    fields      = split(line)
-    if size(fields, 1) > 0
-        flag        = parse(Int, fields[2])
-        chrom       = fields[3]
-        pos         = parse(Int, fields[4])
-        mate_name   = fields[7]
 
-        # Filter out secondary and unmapped reads
-        if (is_primary(flag) && is_mapped(flag))
-            # Additional filters
-            if (~(is_mapping_paired(flag, mate_name, chrom)) || (is_mapping_paired(flag, mate_name, chrom) && is_Trich(flag)))
-                push!(starts, pos + 1)  
-            end
-        end
-    end
+println("Spawning workers...")
+tic()
+r = Any[]
+for i in workers()
+    push!(r, @spawn filter_reads(localpart(lines)))
 end
 toc()
 
+println("Spawned workers...")
 tic()
+for i in 1:nworkers()
+    @printf("%d\t%s\n", r[i].where, size(fetch(r[i])))
+end
+toc()
+
+exit()
+
 println("Calculating counts...")
+tic()
 read_count_data = unique_occurences(starts)[1:end-1, 2]
 toc()
 
