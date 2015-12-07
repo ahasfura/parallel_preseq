@@ -19,6 +19,11 @@ Calling c from julia:
 calling julia from c:
 
 running bash commands from julia:
+1x10^8: .803-.372
+5x10^8: 2.95-1.88
+1x10^9: 5.88-3.78
+5x10^9: 24.29-18.24
+1x10^10: 62.25-36.04
 
 starting julia up no processors specified: 
 1.015s
