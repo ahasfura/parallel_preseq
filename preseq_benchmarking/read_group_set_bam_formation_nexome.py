@@ -10,7 +10,8 @@ sample_root = '/seq/picard_aggregation/D5227'
 out_base = '/humgen/gsa-hpprojects/dev/hogstrom/depth_by_read_group/Nexome'
 chrm_bed_file = '/humgen/gsa-hpprojects/dev/hogstrom/depth_by_read_group/chrm21_full.bed'
 picard_path = '/seq/software/picard/current/bin/picard.jar'
-jl_path = '/humgen/gsa-hpprojects/dev/hogstrom/code/parallel_preseq/read_counts/preseq_lh.jl'
+#jl_path = '/humgen/gsa-hpprojects/dev/hogstrom/code/parallel_preseq/read_counts/preseq_lh.jl'
+jl_path = '/humgen/gsa-hpprojects/dev/hogstrom/code/parallel_preseq/read_counts/preseq_lh_parallel.jl'
 
 processes = set()
 max_processes = 27
@@ -283,6 +284,43 @@ for sample in samples:
             p for p in processes_temp if p.poll() is not None)
 
 
+################################
+### run parallel preseq call ###
+################################
+
+def get_rgs(fpath):
+    cmd = ' '.join(['samtools view -H',
+                     '\"' + fpath + '\"',
+                     '| grep \'^@RG\''])
+    gout = os.popen(cmd).read()
+    rgLines = gout.split('@RG')
+    rgLines.pop(0)
+    return [rg[4:11] for rg in rgLines]
+
+wkdir = out_base + '/parallel_preseq_27Nov'
+sample = 'NexPond-359781'
+nprocs = 16
+for nproc in range(1,17):
+    print nproc
+    #sample = 'NexPond-' + sample 
+    outdir = out_base + '/' + sample
+    #RGbam  = outdir +'/' + sample+'_chrm21_rgSet' + str(i) + '.bam'
+    ### run c_curve on whole file
+    preseq_mode = 'c_curve'
+    RGfull  = outdir +'/' + sample+'_chrm21.bam' # 
+    i = len(get_rgs(RGfull))
+    #bamName = sample+'_chrm21_rgSet' + str(i) + '_dup_marked.bam' # largest read group set
+    bamName = 'NexPond-359781_chrm21_rgSet8_dup_marked.bam'
+    RGbam  = outdir +'/' + bamName
+    fPrefix = bamName.split('.')[0]
+    outMetric = wkdir +'/' + fPrefix +'.jl_read_counts'
+    log_file =  wkdir +'/' + fPrefix +'.processor_timing'
+    cmd2 = ' '.join(['julia -p ' + str(nproc),
+                         jl_path,
+                         '--bam '+RGbam,
+                         '--output '+outMetric,
+                         '>> ' + log_file])
+    os.popen(cmd2)
 
 ### run preseq to estimate libary yield
 # /humgen/gsa-hpprojects/dev/hogstrom/code/preseq/preseq lc_extrap -B \
